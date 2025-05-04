@@ -716,12 +716,21 @@ export class FastMCPSession<T extends FastMCPSessionAuth = FastMCPSessionAuth> e
     this.#server.setRequestHandler(ListToolsRequestSchema, async () => {
       return {
         tools: tools.map((tool) => {
+          let inputSchema;
+          if (tool.parameters) {
+            inputSchema = zodToJsonSchema(tool.parameters);
+            // Remove the $schema property if it exists
+            if (inputSchema && '$schema' in inputSchema) {
+              delete inputSchema.$schema;
+            }
+          } else {
+            inputSchema = undefined;
+          }
+          
           return {
             name: tool.name,
             description: tool.description,
-            inputSchema: tool.parameters
-              ? zodToJsonSchema(tool.parameters)
-              : undefined,
+            inputSchema
           };
         }),
       };
