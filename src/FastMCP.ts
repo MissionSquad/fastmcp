@@ -372,7 +372,9 @@ type SamplingResponse = {
 
 type FastMCPSessionAuth = Record<string, unknown> | undefined;
 
-export class FastMCPSession<T extends FastMCPSessionAuth = FastMCPSessionAuth> extends FastMCPSessionEventEmitter {
+export class FastMCPSession<
+  T extends FastMCPSessionAuth = FastMCPSessionAuth,
+> extends FastMCPSessionEventEmitter {
   #capabilities: ServerCapabilities = {};
   #clientCapabilities?: ClientCapabilities;
   #loggingLevel: LoggingLevel = "info";
@@ -424,7 +426,7 @@ export class FastMCPSession<T extends FastMCPSessionAuth = FastMCPSessionAuth> e
 
     this.#server = new Server(
       { name: name, version: version },
-      { capabilities: this.#capabilities },
+      { capabilities: this.#capabilities }
     );
 
     this.setupErrorHandling();
@@ -540,7 +542,7 @@ export class FastMCPSession<T extends FastMCPSessionAuth = FastMCPSessionAuth> e
   #pingInterval: ReturnType<typeof setInterval> | null = null;
 
   public async requestSampling(
-    message: z.infer<typeof CreateMessageRequestSchema>["params"],
+    message: z.infer<typeof CreateMessageRequestSchema>["params"]
   ): Promise<SamplingResponse> {
     return this.#server.createMessage(message);
   }
@@ -567,15 +569,17 @@ export class FastMCPSession<T extends FastMCPSessionAuth = FastMCPSessionAuth> e
     }
 
     if (!this.#clientCapabilities) {
-      console.warn('[warning] FastMCP could not infer client capabilities')
+      console.warn("[warning] FastMCP could not infer client capabilities");
     }
 
     if (this.#clientCapabilities?.roots?.listChanged) {
       try {
         const roots = await this.#server.listRoots();
         this.#roots = roots.roots;
-      } catch(e) {
-        console.error(`[error] FastMCP received error listing roots.\n\n${e instanceof Error ? e.stack : JSON.stringify(e)}`)
+      } catch (e) {
+        console.error(
+          `[error] FastMCP received error listing roots.\n\n${e instanceof Error ? e.stack : JSON.stringify(e)}`
+        );
       }
     }
 
@@ -620,7 +624,7 @@ export class FastMCPSession<T extends FastMCPSessionAuth = FastMCPSessionAuth> e
     this.#server.setRequestHandler(CompleteRequestSchema, async (request) => {
       if (request.params.ref.type === "ref/prompt") {
         const prompt = this.#prompts.find(
-          (prompt) => prompt.name === request.params.ref.name,
+          (prompt) => prompt.name === request.params.ref.name
         );
 
         if (!prompt) {
@@ -638,8 +642,8 @@ export class FastMCPSession<T extends FastMCPSessionAuth = FastMCPSessionAuth> e
         const completion = CompletionZodSchema.parse(
           await prompt.complete(
             request.params.argument.name,
-            request.params.argument.value,
-          ),
+            request.params.argument.value
+          )
         );
 
         return {
@@ -649,7 +653,7 @@ export class FastMCPSession<T extends FastMCPSessionAuth = FastMCPSessionAuth> e
 
       if (request.params.ref.type === "ref/resource") {
         const resource = this.#resourceTemplates.find(
-          (resource) => resource.uriTemplate === request.params.ref.uri,
+          (resource) => resource.uriTemplate === request.params.ref.uri
         );
 
         if (!resource) {
@@ -667,15 +671,15 @@ export class FastMCPSession<T extends FastMCPSessionAuth = FastMCPSessionAuth> e
             "Resource does not support completion",
             {
               request,
-            },
+            }
           );
         }
 
         const completion = CompletionZodSchema.parse(
           await resource.complete(
             request.params.argument.name,
-            request.params.argument.value,
-          ),
+            request.params.argument.value
+          )
         );
 
         return {
@@ -700,7 +704,7 @@ export class FastMCPSession<T extends FastMCPSessionAuth = FastMCPSessionAuth> e
             roots: roots.roots,
           });
         });
-      },
+      }
     );
   }
 
@@ -716,12 +720,21 @@ export class FastMCPSession<T extends FastMCPSessionAuth = FastMCPSessionAuth> e
     this.#server.setRequestHandler(ListToolsRequestSchema, async () => {
       return {
         tools: tools.map((tool) => {
+          let inputSchema;
+          if (tool.parameters) {
+            inputSchema = zodToJsonSchema(tool.parameters);
+            // Remove the $schema property if it exists
+            if (inputSchema && "$schema" in inputSchema) {
+              delete inputSchema.$schema;
+            }
+          } else {
+            inputSchema = undefined;
+          }
+
           return {
             name: tool.name,
             description: tool.description,
-            inputSchema: tool.parameters
-              ? zodToJsonSchema(tool.parameters)
-              : undefined,
+            inputSchema,
           };
         }),
       };
@@ -733,7 +746,7 @@ export class FastMCPSession<T extends FastMCPSessionAuth = FastMCPSessionAuth> e
       if (!tool) {
         throw new McpError(
           ErrorCode.MethodNotFound,
-          `Unknown tool: ${request.params.name}`,
+          `Unknown tool: ${request.params.name}`
         );
       }
 
@@ -746,18 +759,21 @@ export class FastMCPSession<T extends FastMCPSessionAuth = FastMCPSessionAuth> e
         if (!parsed.success) {
           throw new McpError(
             ErrorCode.InvalidParams,
-            `Invalid ${request.params.name} parameters`,
+            `Invalid ${request.params.name} parameters`
           );
         }
 
         args = parsed.data;
-        
+
         // Extract extra arguments (those not defined in the schema)
-        if (request.params.arguments && typeof request.params.arguments === 'object') {
+        if (
+          request.params.arguments &&
+          typeof request.params.arguments === "object"
+        ) {
           // Get the shape of the schema to determine which fields are defined
           const schemaShape = tool.parameters._def.shape?.();
           const schemaKeys = schemaShape ? Object.keys(schemaShape) : [];
-          
+
           // Extract keys from originalArgs that aren't in the schema
           for (const key in request.params.arguments) {
             if (!schemaKeys.includes(key)) {
@@ -879,13 +895,13 @@ export class FastMCPSession<T extends FastMCPSessionAuth = FastMCPSessionAuth> e
         if ("uri" in request.params) {
           const resource = resources.find(
             (resource) =>
-              "uri" in resource && resource.uri === request.params.uri,
+              "uri" in resource && resource.uri === request.params.uri
           );
 
           if (!resource) {
             for (const resourceTemplate of this.#resourceTemplates) {
               const uriTemplate = parseURITemplate(
-                resourceTemplate.uriTemplate,
+                resourceTemplate.uriTemplate
               );
 
               const match = uriTemplate.fromUri(request.params.uri);
@@ -912,7 +928,7 @@ export class FastMCPSession<T extends FastMCPSessionAuth = FastMCPSessionAuth> e
 
             throw new McpError(
               ErrorCode.MethodNotFound,
-              `Unknown resource: ${request.params.uri}`,
+              `Unknown resource: ${request.params.uri}`
             );
           }
 
@@ -930,7 +946,7 @@ export class FastMCPSession<T extends FastMCPSessionAuth = FastMCPSessionAuth> e
               `Error reading resource: ${error}`,
               {
                 uri: resource.uri,
-              },
+              }
             );
           }
 
@@ -960,7 +976,7 @@ export class FastMCPSession<T extends FastMCPSessionAuth = FastMCPSessionAuth> e
         throw new UnexpectedStateError("Unknown resource request", {
           request,
         });
-      },
+      }
     );
   }
 
@@ -976,7 +992,7 @@ export class FastMCPSession<T extends FastMCPSessionAuth = FastMCPSessionAuth> e
             };
           }),
         };
-      },
+      }
     );
   }
 
@@ -996,13 +1012,13 @@ export class FastMCPSession<T extends FastMCPSessionAuth = FastMCPSessionAuth> e
 
     this.#server.setRequestHandler(GetPromptRequestSchema, async (request) => {
       const prompt = prompts.find(
-        (prompt) => prompt.name === request.params.name,
+        (prompt) => prompt.name === request.params.name
       );
 
       if (!prompt) {
         throw new McpError(
           ErrorCode.MethodNotFound,
-          `Unknown prompt: ${request.params.name}`,
+          `Unknown prompt: ${request.params.name}`
         );
       }
 
@@ -1012,7 +1028,7 @@ export class FastMCPSession<T extends FastMCPSessionAuth = FastMCPSessionAuth> e
         if (arg.required && !(args && arg.name in args)) {
           throw new McpError(
             ErrorCode.InvalidRequest,
-            `Missing required argument: ${arg.name}`,
+            `Missing required argument: ${arg.name}`
           );
         }
       }
@@ -1024,7 +1040,7 @@ export class FastMCPSession<T extends FastMCPSessionAuth = FastMCPSessionAuth> e
       } catch (error) {
         throw new McpError(
           ErrorCode.InternalError,
-          `Error loading prompt: ${error}`,
+          `Error loading prompt: ${error}`
         );
       }
 
