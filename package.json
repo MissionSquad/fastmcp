@@ -1,12 +1,13 @@
 {
   "name": "@missionsquad/fastmcp",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "main": "dist/FastMCP.js",
   "scripts": {
     "build": "tsup",
+    "build:types": "tsc --emitDeclarationOnly --declaration --outDir dist",
     "test": "vitest run && tsc && jsr publish --dry-run",
     "format": "prettier --write . && eslint --fix .",
-    "publish:github": "yarn build && yarn publish --registry=https://npm.pkg.github.com"
+    "publish:github": "yarn build && yarn build:types && yarn publish --registry=https://npm.pkg.github.com"
   },
   "bin": {
     "fastmcp": "dist/bin/fastmcp.js"
@@ -21,6 +22,12 @@
   "description": "A TypeScript framework for building MCP servers.",
   "module": "dist/FastMCP.js",
   "types": "dist/FastMCP.d.ts",
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.6.0",
     "execa": "^9.5.2",
