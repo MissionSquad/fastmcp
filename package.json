@@ -1,11 +1,12 @@
 {
   "name": "@missionsquad/fastmcp",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "main": "dist/FastMCP.js",
   "scripts": {
     "build": "tsup",
     "test": "vitest run && tsc && jsr publish --dry-run",
-    "format": "prettier --write . && eslint --fix ."
+    "format": "prettier --write . && eslint --fix .",
+    "publish:github": "yarn build && yarn publish --registry=https://npm.pkg.github.com"
   },
   "bin": {
     "fastmcp": "dist/bin/fastmcp.js"
@@ -27,6 +28,7 @@
     "fuse.js": "^7.1.0",
     "mcp-proxy": "^2.10.4",
     "strict-event-emitter-types": "^2.0.0",
+    "tslib": "^2.8.1",
     "undici": "^7.4.0",
     "uri-templates": "^0.2.0",
     "yargs": "^17.7.2",
@@ -34,7 +36,7 @@
     "zod-to-json-schema": "^3.24.3"
   },
   "repository": {
-    "url": "https://github.com/punkpeye/fastmcp"
+    "url": "https://github.com/missionsquad/fastmcp"
   },
   "homepage": "https://glama.ai/mcp",
   "release": {
