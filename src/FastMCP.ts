@@ -28,6 +28,7 @@ import { EventEmitter } from "events";
 import Fuse from "fuse.js";
 import { startSSEServer } from "mcp-proxy";
 import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+import { RequestOptions } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import parseURITemplate from "uri-templates";
 import http from "http";
 import {
@@ -179,11 +180,32 @@ const ImageContentZodSchema = z
   })
   .strict() satisfies z.ZodType<ImageContent>;
 
-type Content = TextContent | ImageContent;
+  type AudioContent = {
+    type: "audio";
+    data: string;
+    mimeType: string;
+  };
+
+  const AudioContentZodSchema = z
+    .object({
+      type: z.literal("audio"),
+      /**
+       * The base64-encoded audio data.
+       */
+      data: z.string().base64(),
+      /**
+       * The MIME type of the audio.
+       */
+      mimeType: z.string(),
+    })
+    .strict() satisfies z.ZodType<AudioContent>;
+
+  type Content = TextContent | ImageContent | AudioContent;
 
 const ContentZodSchema = z.discriminatedUnion("type", [
   TextContentZodSchema,
   ImageContentZodSchema,
+  AudioContentZodSchema,
 ]) satisfies z.ZodType<Content>;
 
 type ContentResult = {
@@ -367,7 +389,7 @@ type SamplingResponse = {
   model: string;
   stopReason?: "endTurn" | "stopSequence" | "maxTokens" | string;
   role: "user" | "assistant";
-  content: TextContent | ImageContent;
+  content: TextContent | ImageContent | AudioContent;
 };
 
 type FastMCPSessionAuth = Record<string, unknown> | undefined;
@@ -542,9 +564,10 @@ export class FastMCPSession<
   #pingInterval: ReturnType<typeof setInterval> | null = null;
 
   public async requestSampling(
-    message: z.infer<typeof CreateMessageRequestSchema>["params"]
+    message: z.infer<typeof CreateMessageRequestSchema>["params"],
+    options?: RequestOptions
   ): Promise<SamplingResponse> {
-    return this.#server.createMessage(message);
+    return this.#server.createMessage(message, options);
   }
 
   public async connect(transport: Transport) {
@@ -1206,7 +1229,7 @@ export class FastMCP<T extends Record<string, unknown> | undefined = undefined> 
 
 export type { Context };
 export type { Tool, ToolParameters };
-export type { Content, TextContent, ImageContent, ContentResult };
+export type { Content, TextContent, ImageContent, AudioContent, ContentResult };
 export type { Progress, SerializableValue };
 export type { Resource, ResourceResult };
 export type { ResourceTemplate, ResourceTemplateArgument };
@@ -1214,3 +1237,4 @@ export type { Prompt, PromptArgument };
 export type { InputPrompt, InputPromptArgument };
 export type { ServerOptions, LoggingLevel };
 export type { FastMCPEvents, FastMCPSessionEvents };
+export type { RequestOptions };

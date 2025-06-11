@@ -669,6 +669,23 @@ await session.requestSampling({
 });
 ```
 
+You can also provide request options, such as a timeout in milliseconds:
+
+```ts
+import { RequestOptions } from "fastmcp";
+
+const options: RequestOptions = {
+  timeout: 120000, // 120 seconds
+};
+
+await session.requestSampling(
+  {
+    // ... message parameters
+  },
+  options,
+);
+```
+
 ### `clientCapabilities`
 
 The `clientCapabilities` property contains the client capabilities.
