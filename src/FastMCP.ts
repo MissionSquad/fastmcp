@@ -446,14 +446,12 @@ export class FastMCPSession<
 
     this.#capabilities.logging = {};
 
-    // Declare experimental completions capability if we have prompts or resource templates
-    // since those are what support completion in the setupCompleteHandlers method
-    if (prompts.length || resourcesTemplates.length) {
-      if (!this.#capabilities.experimental) {
-        this.#capabilities.experimental = {};
-      }
-      this.#capabilities.experimental.completions = {};
+    // Always declare experimental completions capability since setupCompleteHandlers is always called
+    // The handler will appropriately throw errors if completion is requested for non-existent prompts/resources
+    if (!this.#capabilities.experimental) {
+      this.#capabilities.experimental = {};
     }
+    this.#capabilities.experimental.completions = {};
 
     this.#server = new Server(
       { name: name, version: version },
