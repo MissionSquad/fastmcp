@@ -446,12 +446,9 @@ export class FastMCPSession<
 
     this.#capabilities.logging = {};
 
-    // Always declare experimental completions capability since setupCompleteHandlers is always called
+    // Always declare completions capability since setupCompleteHandlers is always called
     // The handler will appropriately throw errors if completion is requested for non-existent prompts/resources
-    if (!this.#capabilities.experimental) {
-      this.#capabilities.experimental = {};
-    }
-    this.#capabilities.experimental.completions = {};
+    this.#capabilities.completions = {};
 
     this.#server = new Server(
       { name: name, version: version },
